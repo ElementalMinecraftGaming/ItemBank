@@ -1,0 +1,27 @@
+name: ItemBank
+main: ElementalMinecraftGaming\ItemBank\Main
+version: 1.0.0
+api: [3.7.2]
+load: POSTWORLD
+author: ElementalMinecraftGaming
+description: Store your items with ease!
+
+commands:
+ storeitem:
+  description: Store an item!
+  usage: "/storeitem {ItemID}"
+  permission: bank.item
+  aliases: [si]
+ retrieveitem:
+  description: retrieve your items!
+  usage: "/retrieveitem {ItemID}"
+  permission: bankt.item
+  aliases: [ri]
+
+permissions:
+  bank.item:
+    default: true
+    description: Let's you use /si {ItemID}
+  bankt.item:
+    default: true
+    description: Let's you use /ri {ItemID}
