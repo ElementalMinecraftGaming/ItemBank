@@ -1,7 +1,7 @@
 name: ItemBank
 main: ElementalMinecraftGaming\ItemBank\Main
 version: 1.0.0
-api: [3.7.2]
+api: [3.7.1]
 load: POSTWORLD
 author: ElementalMinecraftGaming
 description: Store your items in a bank!
