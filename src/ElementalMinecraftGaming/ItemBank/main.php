@@ -8,6 +8,9 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
 use pocketmine\event\Listener;
+use pocketmine\item\item;
+use pocketmine\inventory;
+use pocketmine\inventory\PlayerInventory;
 use pocketmine\utils\Config;
 
 class Main extends PluginBase implements Listener
@@ -28,66 +31,124 @@ class Main extends PluginBase implements Listener
         if (strtolower($command->getName()) == "storeitem") {
             if (!$sender->hasPermission("bank.item")) {
                 $sender->sendMessage(TextFormat::RED . "No permissions!");
+                return true;
             }
             if (!$sender instanceof Player) {
                 $sender->sendMessage(TextFormat::RED . "IN GAME ONLY!");
+                return true;
             }
             if (!isset($args[0])) {
                 $sender->sendMessage(TextFormat::RED . "No ID!");
+                return true;
             }
             if (!isset($args[1])) {
                 $sender->sendMessage(TextFormat::RED . "No amount!");
+                return true;
             }
+            if (!$sender->getInventory()->contains(Item::get($args[0]))) {
+                $sender->sendMessage(TextFormat::RED . "No $args[0] in your inventory!");
+                return true;
+            }
+            if (!$this->getBankExist($sender->getName(),$args[0])) {
             $amount = $args[1];
-            $owner = strtolower($sender);
+            $owner = $sender->getName();
             $id = $args[0];
-            $check = $this->getBankAmount($owner,$id);
-            $umm = $this->getBankExist($owner,$id);
-            if (!$check = 0 or !$umm == true) {
+            $sender->getInventory()->removeItem(Item::get($args[0], 0, $args[1]));
             $stmt = $this->db->prepare("INSERT OR REPLACE INTO bank (player, id, amount) VALUES (:player, :id, :amount);");
             $stmt->bindValue(":player", $owner);
             $stmt->bindValue(":id", $id);
             $stmt->bindValue(":amount", $amount);
             $stmt->execute();
+            $sender->sendMessage(TextFormat::BLUE . "You have created an item account!");
             return true;
             }
+            $amount = $args[1];
+            $owner = $sender->getName();
+            $id = $args[0];
+            $add = $this->getBankAmount($owner,$args[0]);
+            $sender->getInventory()->removeItem(Item::get($args[0], 0, $args[1]));
             $stmt = $this->db->prepare("INSERT OR REPLACE INTO bank (player, id, amount) VALUES (:player, :id, :amount);");
             $stmt->bindValue(":player", $owner);
             $stmt->bindValue(":id", $id);
-            $stmt->bindValue(":amount", $this->getBankAmount($sender,$id) + $amount);
+            $stmt->bindValue(":amount", $add + $amount);
             $stmt->execute();
+            $sender->sendMessage(TextFormat::BLUE . "You have added to your bank!");
+            return false;
         }
         
         if (strtolower($command->getName()) == "retrieveitem") {
             if (!$sender->hasPermission("bankt.item")) {
                 $sender->sendMessage(TextFormat::RED . "No permissions!");
+                return true;
             }
             if (!$sender instanceof Player) {
                 $sender->sendMessage(TextFormat::RED . "IN GAME ONLY!");
+                return true;
             }
             if (!isset($args[0])) {
                 $sender->sendMessage(TextFormat::RED . "No ID!");
+                return true;
             }
             if (!isset($args[1])) {
                 $sender->sendMessage(TextFormat::RED . "No amount!");
+                return true;
+            }
+            if (!$this->getBankExist($sender->getName(),$args[0]) == true) {
+                $sender->sendMessage(TextFormat::RED . "No bank created!");
+                return true;
+            }
+            if (!$this->getBankAmount($sender->getName(),$args[0]) <= $args[1]) {
+                $sender->sendMessage(TextFormat::RED . "Not enough stored!");
+                return true;
             }
             $amount = $args[1];
-            $owner = strtolower($sender);
+            $owner = $sender->getName();
             $id = $args[0];
-            $umm = $this->getBankExist($owner,$id);
-            if (!$umm == true) {
-                $sender->sendMessage(TextFormat::RED . "No bank created!");
-            }
-            $check = $this->getBankAmount($owner,$id);
-            if (!$check = $amount) {
-                $sender->sendMessage(TextFormat::RED . "Not enough stored!");
-            }
             $stmt = $this->db->prepare("INSERT OR REPLACE INTO bank (player, id, amount) VALUES (:player, :id, :amount);");
             $stmt->bindValue(":player", $owner);
             $stmt->bindValue(":id", $id);
-            $stmt->bindValue(":amount", $this->getBankAmount($sender,$id) - $amount);
+            $stmt->bindValue(":amount", $this->getBankAmount($owner,$id) - $amount);
             $stmt->execute();
-            
+            $sender->getInventory()->addItem(Item::get($args[0], 0, $args[1]));
+            $sender->sendMessage(TextFormat::BLUE . "Success!");
+            return false;
+        }
+        
+        if (strtolower($command->getName()) == "bankitem") {
+            if (!$sender->hasPermission("bankt.item")) {
+                $sender->sendMessage(TextFormat::RED . "No permissions!");
+                return true;
+            }
+            if (!$sender instanceof Player) {
+                $sender->sendMessage(TextFormat::RED . "IN GAME ONLY!");
+                return true;
+            }
+            if (!isset($args[0])) {
+                $sender->sendMessage(TextFormat::RED . "No ID!");
+                return true;
+            }
+            if (!$this->getBankExist($sender->getName(),$args[0])) {
+                $sender->sendMessage(TextFormat::RED . "No bank created!");
+                return true;
+            }
+            $owner = $sender->getName();
+            $id = $args[0];
+            $amount = $this->getBankAmount($owner, $id);
+            $sender->sendMessage(TextFormat::BLUE . "You have $amount of $id!");
+            return false;
+        }
+
+        if (strtolower($command->getName()) == "bankhelp") {
+            if (!$sender->hasPermission("bankt.item")) {
+                $sender->sendMessage(TextFormat::RED . "No permissions!");
+                return true;
+            }
+            if (!$sender instanceof Player) {
+                $sender->sendMessage(TextFormat::RED . "IN GAME ONLY!");
+                return true;
+            }
+            $sender->sendMessage(TextFormat::BLUE . "\n/storei {id} {amount}\n/retrievei {id} {amount}\n/banki {id}\n/bankhelp!");
+            return false;
         }
     }
     
@@ -98,8 +159,8 @@ class Main extends PluginBase implements Listener
     }
     
     public function getBankExist($owner,$id) {
-        $stuff = strtolower($owner);
-        $stufff = strtolower($id);
+        $stuff = $owner;
+        $stufff = $id;
         $result = $this->db->query("SELECT player, id FROM bank WHERE player ='$stuff' AND id = '$stufff';");
         $array = $result->fetchArray(SQLITE3_ASSOC);
         return empty($array) == false;
