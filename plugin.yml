@@ -4,19 +4,25 @@ version: 1.0.0
 api: [3.7.2]
 load: POSTWORLD
 author: ElementalMinecraftGaming
-description: Store your items with ease!
+description: Store your items in a bank!
 
 commands:
  storeitem:
   description: Store an item!
-  usage: "/storeitem {ItemID}"
   permission: bank.item
-  aliases: [si]
+  aliases: [storei]
  retrieveitem:
   description: retrieve your items!
-  usage: "/retrieveitem {ItemID}"
   permission: bankt.item
-  aliases: [ri]
+  aliases: [retrievei]
+ bankitem:
+  description: check amount of stored items!
+  permission: bankt.item
+  aliases: [banki]
+ bankhelp:
+  description: BankItem commands!
+  permission: bankt.item
+  aliases: [bankh]
 
 permissions:
   bank.item:
