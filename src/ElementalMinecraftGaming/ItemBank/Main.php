@@ -19,7 +19,6 @@ class Main extends PluginBase implements Listener
     public $db;
 
     public function onEnable() {
-        $this->getLogger()->info("Created by MrDevCat -Discord- ");
         @mkdir($this->getDataFolder());
 
         $this->db = new \SQLite3($this->getDataFolder() . "BankItem.db");
